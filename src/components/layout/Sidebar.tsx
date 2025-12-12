@@ -5,7 +5,8 @@ import {
   Clock, 
   History,
   Settings,
-  Package
+  Package,
+  BarChart3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -20,6 +21,7 @@ const menuItems = [
   { id: 'transaksi', label: 'Transaksi Baru', icon: FileText },
   { id: 'piutang', label: 'Daftar Piutang', icon: Clock },
   { id: 'riwayat', label: 'Riwayat', icon: History },
+  { id: 'laporan', label: 'Laporan', icon: BarChart3 },
 ];
 
 export function Sidebar({ activeMenu, onMenuChange }: SidebarProps) {

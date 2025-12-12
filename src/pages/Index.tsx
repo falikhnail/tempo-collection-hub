@@ -16,6 +16,7 @@ import { TokoCard } from '@/components/toko/TokoCard';
 import { TransaksiForm } from '@/components/forms/TransaksiForm';
 import { TokoForm } from '@/components/forms/TokoForm';
 import { BayarForm } from '@/components/forms/BayarForm';
+import { LaporanPage } from '@/components/laporan/LaporanPage';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -34,6 +35,7 @@ const pageConfig: Record<string, { title: string; subtitle?: string }> = {
   transaksi: { title: 'Transaksi Baru', subtitle: 'Buat transaksi penjualan' },
   piutang: { title: 'Daftar Piutang', subtitle: 'Kelola semua piutang' },
   riwayat: { title: 'Riwayat Transaksi', subtitle: 'Lihat semua transaksi' },
+  laporan: { title: 'Laporan', subtitle: 'Grafik dan statistik piutang' },
   settings: { title: 'Pengaturan', subtitle: 'Konfigurasi aplikasi' },
 };
 
@@ -275,6 +277,11 @@ export default function Index() {
               onKirimWA={sendWhatsApp}
             />
           </div>
+        );
+      
+      case 'laporan':
+        return (
+          <LaporanPage transaksi={transaksiList} toko={tokoList} />
         );
       
       case 'settings':
