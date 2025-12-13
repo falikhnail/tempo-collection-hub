@@ -17,10 +17,12 @@ import { TransaksiForm } from '@/components/forms/TransaksiForm';
 import { TokoForm } from '@/components/forms/TokoForm';
 import { BayarForm } from '@/components/forms/BayarForm';
 import { LaporanPage } from '@/components/laporan/LaporanPage';
+import { TransaksiDetail } from '@/components/transaksi/TransaksiDetail';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -50,7 +52,13 @@ export default function Index() {
   const [showTokoForm, setShowTokoForm] = useState(false);
   const [editingToko, setEditingToko] = useState<Toko | undefined>();
   const [showBayarForm, setShowBayarForm] = useState(false);
+  const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [selectedTransaksi, setSelectedTransaksi] = useState<Transaksi | undefined>();
+
+  const handleDetail = (transaksi: Transaksi) => {
+    setSelectedTransaksi(transaksi);
+    setShowDetailDialog(true);
+  };
 
   // Stats calculation
   const totalPiutang = transaksiList.reduce((sum, t) => sum + t.sisaPiutang, 0);
@@ -260,7 +268,7 @@ export default function Index() {
               transaksi={transaksiList}
               statusFilter={statusFilter}
               onBayar={handleBayar}
-              onDetail={(t) => toast({ title: 'Detail', description: `Melihat detail ${t.id}` })}
+              onDetail={handleDetail}
               onKirimWA={sendWhatsApp}
             />
           </div>
@@ -273,7 +281,7 @@ export default function Index() {
               transaksi={transaksiList}
               statusFilter="semua"
               onBayar={handleBayar}
-              onDetail={(t) => toast({ title: 'Detail', description: `Melihat detail ${t.id}` })}
+              onDetail={handleDetail}
               onKirimWA={sendWhatsApp}
             />
           </div>
@@ -350,6 +358,18 @@ export default function Index() {
                 setSelectedTransaksi(undefined);
               }}
             />
+          )}
+        </DialogContent>
+      </Dialog>
+      {/* Detail Transaksi Dialog */}
+      <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Detail Transaksi</DialogTitle>
+            <DialogDescription>Informasi lengkap transaksi dan pembayaran</DialogDescription>
+          </DialogHeader>
+          {selectedTransaksi && (
+            <TransaksiDetail transaksi={selectedTransaksi} />
           )}
         </DialogContent>
       </Dialog>
