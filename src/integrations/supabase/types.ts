@@ -14,7 +14,159 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      item_transaksi: {
+        Row: {
+          created_at: string
+          harga_satuan: number
+          id: string
+          jumlah: number
+          nama_barang: string
+          subtotal: number
+          transaksi_id: string
+        }
+        Insert: {
+          created_at?: string
+          harga_satuan?: number
+          id?: string
+          jumlah?: number
+          nama_barang: string
+          subtotal?: number
+          transaksi_id: string
+        }
+        Update: {
+          created_at?: string
+          harga_satuan?: number
+          id?: string
+          jumlah?: number
+          nama_barang?: string
+          subtotal?: number
+          transaksi_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_transaksi_transaksi_id_fkey"
+            columns: ["transaksi_id"]
+            isOneToOne: false
+            referencedRelation: "transaksi"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pembayaran: {
+        Row: {
+          catatan: string | null
+          created_at: string
+          id: string
+          jumlah: number
+          metode: string
+          tanggal: string
+          transaksi_id: string
+        }
+        Insert: {
+          catatan?: string | null
+          created_at?: string
+          id?: string
+          jumlah?: number
+          metode?: string
+          tanggal?: string
+          transaksi_id: string
+        }
+        Update: {
+          catatan?: string | null
+          created_at?: string
+          id?: string
+          jumlah?: number
+          metode?: string
+          tanggal?: string
+          transaksi_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pembayaran_transaksi_id_fkey"
+            columns: ["transaksi_id"]
+            isOneToOne: false
+            referencedRelation: "transaksi"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      toko: {
+        Row: {
+          alamat: string
+          created_at: string
+          email: string | null
+          id: string
+          nama: string
+          telepon: string
+          whatsapp: string
+        }
+        Insert: {
+          alamat: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          nama: string
+          telepon: string
+          whatsapp: string
+        }
+        Update: {
+          alamat?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          nama?: string
+          telepon?: string
+          whatsapp?: string
+        }
+        Relationships: []
+      }
+      transaksi: {
+        Row: {
+          catatan: string | null
+          created_at: string
+          id: string
+          jatuh_tempo: string | null
+          sisa_piutang: number
+          status: string
+          tanggal: string
+          tipe_pembayaran: string
+          toko_id: string
+          total_harga: number
+        }
+        Insert: {
+          catatan?: string | null
+          created_at?: string
+          id: string
+          jatuh_tempo?: string | null
+          sisa_piutang?: number
+          status?: string
+          tanggal?: string
+          tipe_pembayaran: string
+          toko_id: string
+          total_harga?: number
+        }
+        Update: {
+          catatan?: string | null
+          created_at?: string
+          id?: string
+          jatuh_tempo?: string | null
+          sisa_piutang?: number
+          status?: string
+          tanggal?: string
+          tipe_pembayaran?: string
+          toko_id?: string
+          total_harga?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaksi_toko_id_fkey"
+            columns: ["toko_id"]
+            isOneToOne: false
+            referencedRelation: "toko"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
