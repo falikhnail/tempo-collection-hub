@@ -1,74 +1,176 @@
-# Welcome to your Lovable project
+# FurniTrack - Sistem Manajemen Piutang Toko Furniture
 
-## Project info
+<div align="center">
+  <h3>Kelola piutang dan transaksi toko furniture Anda dengan mudah</h3>
+</div>
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+---
 
-## How can I edit this code?
+## 📋 Tentang Aplikasi
 
-There are several ways of editing your application.
+FurniTrack adalah sistem manajemen piutang yang dirancang khusus untuk toko furniture grosir. Aplikasi ini membantu pemilik bisnis untuk mencatat transaksi, melacak piutang pelanggan, dan mengelola pembayaran dengan efisien.
 
-**Use Lovable**
+## ✨ Fitur Utama
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+### 📊 Dashboard
+- Ringkasan total piutang dan transaksi aktif
+- Indikator piutang terlambat
+- Daftar jatuh tempo terdekat
+- Transaksi terbaru
 
-Changes made via Lovable will be committed automatically to this repo.
+### 🏪 Manajemen Toko/Pelanggan
+- Tambah, edit, dan hapus data pelanggan
+- Informasi kontak lengkap (telepon, WhatsApp, email)
+- Integrasi langsung ke WhatsApp
 
-**Use your preferred IDE**
+### 💳 Pencatatan Transaksi
+- Transaksi cash dan tempo (cicilan)
+- Input multiple item per transaksi
+- Pencatatan DP (Down Payment)
+- Pengaturan tanggal jatuh tempo
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### 📑 Tracking Piutang
+- Filter berdasarkan status (Aktif, Terlambat, Lunas)
+- Indikator visual status jatuh tempo
+- Detail transaksi lengkap
+- Riwayat pembayaran
 
-The only requirement is having Bun installed - [install Bun](https://bun.sh/docs/installation)
+### 📱 Notifikasi WhatsApp
+- Kirim pengingat pembayaran langsung via WhatsApp
+- Template pesan otomatis dengan detail piutang
+- Akses cepat ke kontak pelanggan
 
-Follow these steps:
+### 📈 Laporan & Analitik
+- Grafik perkembangan piutang bulanan
+- Statistik per toko
+- Filter berdasarkan periode (tanggal, bulan, tahun)
+- Export ke Excel dan PDF
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## 🛠️ Teknologi
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+- **Frontend**: React 19, TypeScript, Vite
+- **Styling**: Tailwind CSS, shadcn/ui
+- **Backend**: Lovable Cloud (Supabase)
+- **Database**: PostgreSQL
+- **Charts**: Recharts
+- **Export**: xlsx, jspdf
 
-# Step 3: Install the necessary dependencies.
+## 🚀 Memulai
+
+### Prasyarat
+- Node.js 18+ atau Bun
+- Akun Lovable (untuk backend)
+
+### Instalasi
+
+```bash
+# Clone repository
+git clone <repository-url>
+
+# Install dependencies
 bun install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Jalankan development server
 bun run dev
 ```
 
-**Edit a file directly in GitHub**
+Aplikasi akan berjalan di `http://localhost:5173`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 📁 Struktur Proyek
 
-**Use GitHub Codespaces**
+```
+src/
+├── components/
+│   ├── dashboard/      # Komponen dashboard (StatCard, JatuhTempoList, dll)
+│   ├── forms/          # Form input (TransaksiForm, TokoForm, BayarForm)
+│   ├── laporan/        # Halaman laporan dan grafik
+│   ├── layout/         # Layout components (Sidebar, Header)
+│   ├── piutang/        # Tabel piutang
+│   ├── toko/           # Komponen toko/pelanggan
+│   ├── transaksi/      # Detail transaksi
+│   └── ui/             # shadcn/ui components
+├── hooks/
+│   ├── useToko.ts      # Hook untuk data toko
+│   └── useTransaksi.ts # Hook untuk data transaksi
+├── integrations/
+│   └── supabase/       # Konfigurasi Supabase
+├── pages/
+│   └── Index.tsx       # Halaman utama
+└── types/
+    └── index.ts        # TypeScript interfaces
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 📊 Database Schema
 
-## What technologies are used for this project?
+### Tabel `toko`
+| Kolom | Tipe | Deskripsi |
+|-------|------|-----------|
+| id | UUID | Primary key |
+| nama | TEXT | Nama toko |
+| alamat | TEXT | Alamat lengkap |
+| telepon | TEXT | Nomor telepon |
+| whatsapp | TEXT | Nomor WhatsApp |
+| email | TEXT | Email (opsional) |
+| created_at | TIMESTAMP | Tanggal dibuat |
 
-This project is built with:
+### Tabel `transaksi`
+| Kolom | Tipe | Deskripsi |
+|-------|------|-----------|
+| id | TEXT | ID transaksi (TRXxxxxxx) |
+| toko_id | UUID | Foreign key ke toko |
+| tanggal | TIMESTAMP | Tanggal transaksi |
+| total_harga | NUMERIC | Total harga |
+| tipe_pembayaran | TEXT | 'cash' atau 'tempo' |
+| jatuh_tempo | TIMESTAMP | Tanggal jatuh tempo |
+| status | TEXT | Status piutang |
+| sisa_piutang | NUMERIC | Sisa yang belum dibayar |
+| catatan | TEXT | Catatan tambahan |
 
-- Bun 1.3.4
-- Vite 7.2.7
-- TypeScript
-- React 19.2.1
-- shadcn-ui
-- Tailwind CSS
+### Tabel `item_transaksi`
+| Kolom | Tipe | Deskripsi |
+|-------|------|-----------|
+| id | UUID | Primary key |
+| transaksi_id | TEXT | Foreign key ke transaksi |
+| nama_barang | TEXT | Nama barang |
+| jumlah | INTEGER | Jumlah barang |
+| harga_satuan | NUMERIC | Harga per unit |
+| subtotal | NUMERIC | Jumlah × harga |
 
-## How can I deploy this project?
+### Tabel `pembayaran`
+| Kolom | Tipe | Deskripsi |
+|-------|------|-----------|
+| id | UUID | Primary key |
+| transaksi_id | TEXT | Foreign key ke transaksi |
+| tanggal | TIMESTAMP | Tanggal pembayaran |
+| jumlah | NUMERIC | Jumlah pembayaran |
+| metode | TEXT | 'cash', 'transfer', atau 'lainnya' |
+| catatan | TEXT | Catatan pembayaran |
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## 🔒 Keamanan
 
-## Can I connect a custom domain to my Lovable project?
+- Row Level Security (RLS) aktif di semua tabel
+- Data terenkripsi saat transit dan at-rest
+- Untuk production, tambahkan autentikasi pengguna
 
-Yes, you can!
+## 📝 Pengembangan Selanjutnya
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+- [ ] Autentikasi pengguna (login/logout)
+- [ ] Notifikasi WhatsApp otomatis
+- [ ] Multi-user dengan role management
+- [ ] Backup data otomatis
+- [ ] Mobile responsive optimization
+- [ ] Print invoice
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## 🤝 Kontribusi
+
+Kontribusi sangat diterima! Silakan buat pull request atau buka issue untuk saran dan perbaikan.
+
+## 📄 Lisensi
+
+MIT License - Silakan gunakan untuk keperluan personal maupun komersial.
+
+---
+
+<div align="center">
+  <p>Dibuat dengan ❤️ menggunakan <a href="https://lovable.dev">Lovable</a></p>
+</div>
