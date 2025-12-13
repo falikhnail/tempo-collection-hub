@@ -1,14 +1,19 @@
 import { useMemo, useState } from 'react';
-import { FileDown, FileSpreadsheet, TrendingUp, Store, BarChart3 } from 'lucide-react';
+import { FileDown, FileSpreadsheet, TrendingUp, Store, BarChart3, CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { PiutangChart } from './PiutangChart';
 import { TokoStats } from './TokoStats';
 import { Transaksi, Toko } from '@/types';
 import { formatRupiah } from '@/data/mockData';
 import { useToast } from '@/hooks/use-toast';
+import { format, startOfMonth, endOfMonth, subMonths, startOfYear, isWithinInterval } from 'date-fns';
+import { id } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -18,27 +23,55 @@ interface LaporanPageProps {
   toko: Toko[];
 }
 
-type PeriodFilter = '6bulan' | '12bulan' | 'tahunIni';
+type PeriodFilter = '6bulan' | '12bulan' | 'tahunIni' | 'custom';
 
 export function LaporanPage({ transaksi, toko }: LaporanPageProps) {
   const { toast } = useToast();
   const [period, setPeriod] = useState<PeriodFilter>('6bulan');
+  const [startDate, setStartDate] = useState<Date | undefined>(subMonths(new Date(), 6));
+  const [endDate, setEndDate] = useState<Date | undefined>(new Date());
+
+  // Calculate date range based on period filter
+  const dateRange = useMemo(() => {
+    const now = new Date();
+    
+    if (period === 'custom' && startDate && endDate) {
+      return { start: startOfMonth(startDate), end: endOfMonth(endDate) };
+    }
+    
+    switch (period) {
+      case '6bulan':
+        return { start: startOfMonth(subMonths(now, 5)), end: endOfMonth(now) };
+      case '12bulan':
+        return { start: startOfMonth(subMonths(now, 11)), end: endOfMonth(now) };
+      case 'tahunIni':
+        return { start: startOfYear(now), end: endOfMonth(now) };
+      default:
+        return { start: startOfMonth(subMonths(now, 5)), end: endOfMonth(now) };
+    }
+  }, [period, startDate, endDate]);
+
+  // Filter transaksi by date range
+  const filteredTransaksi = useMemo(() => {
+    return transaksi.filter(t => {
+      const tDate = new Date(t.tanggal);
+      return isWithinInterval(tDate, { start: dateRange.start, end: dateRange.end });
+    });
+  }, [transaksi, dateRange]);
 
   // Calculate monthly data for chart
   const monthlyData = useMemo(() => {
-    const now = new Date();
-    const monthsToShow = period === '6bulan' ? 6 : period === '12bulan' ? 12 : now.getMonth() + 1;
-    
     const months: { bulan: string; piutang: number; terbayar: number; transaksi: number }[] = [];
     
-    for (let i = monthsToShow - 1; i >= 0; i--) {
-      const targetDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthName = targetDate.toLocaleDateString('id-ID', { month: 'short', year: '2-digit' });
+    let current = new Date(dateRange.start);
+    while (current <= dateRange.end) {
+      const targetMonth = current.getMonth();
+      const targetYear = current.getFullYear();
+      const monthName = format(current, 'MMM yy', { locale: id });
       
       const monthTransaksi = transaksi.filter(t => {
         const tDate = new Date(t.tanggal);
-        return tDate.getMonth() === targetDate.getMonth() && 
-               tDate.getFullYear() === targetDate.getFullYear();
+        return tDate.getMonth() === targetMonth && tDate.getFullYear() === targetYear;
       });
       
       const totalPiutang = monthTransaksi
@@ -55,15 +88,17 @@ export function LaporanPage({ transaksi, toko }: LaporanPageProps) {
         terbayar: totalTerbayar,
         transaksi: monthTransaksi.length,
       });
+      
+      current = new Date(current.getFullYear(), current.getMonth() + 1, 1);
     }
     
     return months;
-  }, [transaksi, period]);
+  }, [transaksi, dateRange]);
 
-  // Calculate per-toko stats
+  // Calculate per-toko stats (filtered)
   const tokoStats = useMemo(() => {
     return toko.map(t => {
-      const tokoTransaksi = transaksi.filter(tr => tr.tokoId === t.id);
+      const tokoTransaksi = filteredTransaksi.filter(tr => tr.tokoId === t.id);
       const totalTransaksi = tokoTransaksi.length;
       const totalPiutang = tokoTransaksi.reduce((sum, tr) => sum + tr.sisaPiutang, 0);
       const totalTerbayar = tokoTransaksi.reduce((sum, tr) => 
@@ -84,23 +119,43 @@ export function LaporanPage({ transaksi, toko }: LaporanPageProps) {
         lunas,
         persentaseLunas: totalTransaksi > 0 ? Math.round((lunas / totalTransaksi) * 100) : 0,
       };
-    }).sort((a, b) => b.totalNilai - a.totalNilai);
-  }, [transaksi, toko]);
+    }).filter(t => t.totalTransaksi > 0).sort((a, b) => b.totalNilai - a.totalNilai);
+  }, [filteredTransaksi, toko]);
 
-  // Summary stats
+  // Summary stats (filtered)
   const summaryStats = useMemo(() => {
-    const totalPiutang = transaksi.reduce((sum, t) => sum + t.sisaPiutang, 0);
-    const totalTerbayar = transaksi.reduce((sum, t) => 
+    const totalPiutang = filteredTransaksi.reduce((sum, t) => sum + t.sisaPiutang, 0);
+    const totalTerbayar = filteredTransaksi.reduce((sum, t) => 
       sum + t.pembayaran.reduce((psum, p) => psum + p.jumlah, 0), 0
     );
-    const totalTransaksi = transaksi.length;
-    const transaksiTerlambat = transaksi.filter(t => t.status === 'terlambat').length;
+    const totalTransaksi = filteredTransaksi.length;
+    const transaksiTerlambat = filteredTransaksi.filter(t => t.status === 'terlambat').length;
     
     return { totalPiutang, totalTerbayar, totalTransaksi, transaksiTerlambat };
-  }, [transaksi]);
+  }, [filteredTransaksi]);
+
+  const handlePeriodChange = (value: PeriodFilter) => {
+    setPeriod(value);
+    if (value !== 'custom') {
+      const now = new Date();
+      switch (value) {
+        case '6bulan':
+          setStartDate(subMonths(now, 5));
+          setEndDate(now);
+          break;
+        case '12bulan':
+          setStartDate(subMonths(now, 11));
+          setEndDate(now);
+          break;
+        case 'tahunIni':
+          setStartDate(startOfYear(now));
+          setEndDate(now);
+          break;
+      }
+    }
+  };
 
   const exportToExcel = () => {
-    // Sheet 1: Summary per Toko
     const tokoData = tokoStats.map(t => ({
       'Nama Toko': t.nama,
       'Total Transaksi': t.totalTransaksi,
@@ -112,8 +167,7 @@ export function LaporanPage({ transaksi, toko }: LaporanPageProps) {
       'Persentase Lunas': `${t.persentaseLunas}%`,
     }));
 
-    // Sheet 2: Detail Transaksi
-    const transaksiData = transaksi.map(t => ({
+    const transaksiData = filteredTransaksi.map(t => ({
       'ID Transaksi': t.id,
       'Tanggal': new Date(t.tanggal).toLocaleDateString('id-ID'),
       'Toko': t.toko.nama,
@@ -124,7 +178,6 @@ export function LaporanPage({ transaksi, toko }: LaporanPageProps) {
       'Sisa Piutang': t.sisaPiutang,
     }));
 
-    // Sheet 3: Monthly Summary
     const monthlyExport = monthlyData.map(m => ({
       'Bulan': m.bulan,
       'Jumlah Transaksi': m.transaksi,
@@ -152,13 +205,11 @@ export function LaporanPage({ transaksi, toko }: LaporanPageProps) {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     
-    // Title
     doc.setFontSize(18);
     doc.text('Laporan Piutang FurniTrack', pageWidth / 2, 20, { align: 'center' });
     doc.setFontSize(10);
-    doc.text(`Tanggal: ${new Date().toLocaleDateString('id-ID')}`, pageWidth / 2, 28, { align: 'center' });
+    doc.text(`Periode: ${format(dateRange.start, 'd MMM yyyy', { locale: id })} - ${format(dateRange.end, 'd MMM yyyy', { locale: id })}`, pageWidth / 2, 28, { align: 'center' });
     
-    // Summary Section
     doc.setFontSize(12);
     doc.text('Ringkasan', 14, 40);
     doc.setFontSize(10);
@@ -167,7 +218,6 @@ export function LaporanPage({ transaksi, toko }: LaporanPageProps) {
     doc.text(`Total Transaksi: ${summaryStats.totalTransaksi}`, 14, 60);
     doc.text(`Transaksi Terlambat: ${summaryStats.transaksiTerlambat}`, 14, 66);
     
-    // Toko Stats Table
     doc.setFontSize(12);
     doc.text('Statistik per Toko', 14, 80);
     
@@ -185,7 +235,6 @@ export function LaporanPage({ transaksi, toko }: LaporanPageProps) {
       headStyles: { fillColor: [59, 130, 246] },
     });
     
-    // New page for transaction details
     doc.addPage();
     doc.setFontSize(12);
     doc.text('Detail Transaksi', 14, 20);
@@ -193,7 +242,7 @@ export function LaporanPage({ transaksi, toko }: LaporanPageProps) {
     autoTable(doc, {
       startY: 25,
       head: [['ID', 'Tanggal', 'Toko', 'Total', 'Status', 'Sisa']],
-      body: transaksi.slice(0, 20).map(t => [
+      body: filteredTransaksi.slice(0, 20).map(t => [
         t.id,
         new Date(t.tanggal).toLocaleDateString('id-ID'),
         t.toko.nama.substring(0, 15),
@@ -212,44 +261,92 @@ export function LaporanPage({ transaksi, toko }: LaporanPageProps) {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header with Export Buttons */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-3">
-          <Select value={period} onValueChange={(v) => setPeriod(v as PeriodFilter)}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Pilih periode" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="6bulan">6 Bulan Terakhir</SelectItem>
-              <SelectItem value="12bulan">12 Bulan Terakhir</SelectItem>
-              <SelectItem value="tahunIni">Tahun Ini</SelectItem>
-            </SelectContent>
-          </Select>
+      {/* Header with Filters and Export Buttons */}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <Select value={period} onValueChange={(v) => handlePeriodChange(v as PeriodFilter)}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="Pilih periode" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="6bulan">6 Bulan Terakhir</SelectItem>
+                <SelectItem value="12bulan">12 Bulan Terakhir</SelectItem>
+                <SelectItem value="tahunIni">Tahun Ini</SelectItem>
+                <SelectItem value="custom">Rentang Custom</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            {period === 'custom' && (
+              <div className="flex items-center gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className={cn("w-[130px] justify-start text-left font-normal", !startDate && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {startDate ? format(startDate, 'MMM yyyy', { locale: id }) : 'Dari'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={startDate}
+                      onSelect={setStartDate}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+                <span className="text-muted-foreground">-</span>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className={cn("w-[130px] justify-start text-left font-normal", !endDate && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {endDate ? format(endDate, 'MMM yyyy', { locale: id }) : 'Sampai'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={endDate}
+                      onSelect={setEndDate}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            )}
+          </div>
+          
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={exportToExcel}>
+              <FileSpreadsheet className="h-4 w-4" />
+              <span className="hidden sm:inline">Export</span> Excel
+            </Button>
+            <Button variant="outline" size="sm" onClick={exportToPDF}>
+              <FileDown className="h-4 w-4" />
+              <span className="hidden sm:inline">Export</span> PDF
+            </Button>
+          </div>
         </div>
         
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={exportToExcel}>
-            <FileSpreadsheet className="h-4 w-4" />
-            Export Excel
-          </Button>
-          <Button variant="outline" onClick={exportToPDF}>
-            <FileDown className="h-4 w-4" />
-            Export PDF
-          </Button>
-        </div>
+        {/* Period indicator */}
+        <p className="text-sm text-muted-foreground">
+          Menampilkan data: {format(dateRange.start, 'd MMM yyyy', { locale: id })} - {format(dateRange.end, 'd MMM yyyy', { locale: id })}
+        </p>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
+              <div className="p-2 rounded-lg bg-primary/10 shrink-0">
                 <TrendingUp className="h-5 w-5 text-primary" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Piutang</p>
-                <p className="text-xl font-bold">{formatRupiah(summaryStats.totalPiutang)}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">Total Piutang</p>
+                <p className="text-base sm:text-xl font-bold truncate">{formatRupiah(summaryStats.totalPiutang)}</p>
               </div>
             </div>
           </CardContent>
@@ -257,12 +354,12 @@ export function LaporanPage({ transaksi, toko }: LaporanPageProps) {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-success/10">
+              <div className="p-2 rounded-lg bg-success/10 shrink-0">
                 <BarChart3 className="h-5 w-5 text-success" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Terbayar</p>
-                <p className="text-xl font-bold">{formatRupiah(summaryStats.totalTerbayar)}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">Total Terbayar</p>
+                <p className="text-base sm:text-xl font-bold truncate">{formatRupiah(summaryStats.totalTerbayar)}</p>
               </div>
             </div>
           </CardContent>
@@ -270,12 +367,12 @@ export function LaporanPage({ transaksi, toko }: LaporanPageProps) {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-secondary">
+              <div className="p-2 rounded-lg bg-secondary shrink-0">
                 <Store className="h-5 w-5 text-secondary-foreground" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Transaksi</p>
-                <p className="text-xl font-bold">{summaryStats.totalTransaksi}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">Total Transaksi</p>
+                <p className="text-base sm:text-xl font-bold">{summaryStats.totalTransaksi}</p>
               </div>
             </div>
           </CardContent>
@@ -283,12 +380,12 @@ export function LaporanPage({ transaksi, toko }: LaporanPageProps) {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-destructive/10">
+              <div className="p-2 rounded-lg bg-destructive/10 shrink-0">
                 <TrendingUp className="h-5 w-5 text-destructive" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Terlambat</p>
-                <p className="text-xl font-bold">{summaryStats.transaksiTerlambat} transaksi</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">Terlambat</p>
+                <p className="text-base sm:text-xl font-bold">{summaryStats.transaksiTerlambat}</p>
               </div>
             </div>
           </CardContent>
