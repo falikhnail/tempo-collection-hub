@@ -27,9 +27,11 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { mockToko, mockTransaksi, formatRupiah } from '@/data/mockData';
+import { formatRupiah } from '@/data/mockData';
 import { Toko, Transaksi, StatusFilter } from '@/types';
-import { useToast } from '@/hooks/use-toast';
+import { useToko } from '@/hooks/useToko';
+import { useTransaksi } from '@/hooks/useTransaksi';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const pageConfig: Record<string, { title: string; subtitle?: string }> = {
   dashboard: { title: 'Dashboard', subtitle: 'Ringkasan piutang dan transaksi' },
@@ -42,11 +44,12 @@ const pageConfig: Record<string, { title: string; subtitle?: string }> = {
 };
 
 export default function Index() {
-  const { toast } = useToast();
   const [activeMenu, setActiveMenu] = useState('dashboard');
-  const [tokoList, setTokoList] = useState<Toko[]>(mockToko);
-  const [transaksiList, setTransaksiList] = useState<Transaksi[]>(mockTransaksi);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('semua');
+  
+  // Database hooks
+  const { tokoList, loading: tokoLoading, addToko, updateToko, deleteToko } = useToko();
+  const { transaksiList, loading: transaksiLoading, addTransaksi, addPembayaran } = useTransaksi();
   
   // Dialog states
   const [showTokoForm, setShowTokoForm] = useState(false);
@@ -74,7 +77,6 @@ export default function Index() {
     const message = `Halo ${transaksi.toko.nama},\n\nIni adalah pengingat untuk pembayaran piutang:\n- ID: ${transaksi.id}\n- Sisa: ${formatRupiah(transaksi.sisaPiutang)}\n- Jatuh Tempo: ${transaksi.jatuhTempo?.toLocaleDateString('id-ID')}\n\nMohon segera melakukan pembayaran. Terima kasih.`;
     const url = `https://wa.me/${transaksi.toko.whatsapp}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
-    toast({ title: 'WhatsApp', description: 'Membuka WhatsApp...' });
   };
 
   const sendWhatsAppToko = (toko: Toko) => {
@@ -87,44 +89,19 @@ export default function Index() {
     setShowBayarForm(true);
   };
 
-  const handleSubmitBayar = (data: { jumlah: number; metode: string; catatan: string }) => {
+  const handleSubmitBayar = async (data: { jumlah: number; metode: string; catatan: string }) => {
     if (!selectedTransaksi) return;
-    
-    const newPembayaran = {
-      id: `PAY${Date.now()}`,
-      transaksiId: selectedTransaksi.id,
-      tanggal: new Date(),
-      jumlah: data.jumlah,
-      metode: data.metode as 'transfer' | 'cash' | 'lainnya',
-      catatan: data.catatan,
-    };
-    
-    const newSisa = selectedTransaksi.sisaPiutang - data.jumlah;
-    const updatedTransaksi = transaksiList.map(t => {
-      if (t.id === selectedTransaksi.id) {
-        return {
-          ...t,
-          pembayaran: [...t.pembayaran, newPembayaran],
-          sisaPiutang: newSisa,
-          status: newSisa === 0 ? 'lunas' as const : t.status,
-        };
-      }
-      return t;
-    });
-    
-    setTransaksiList(updatedTransaksi);
+    await addPembayaran(selectedTransaksi.id, data);
     setShowBayarForm(false);
     setSelectedTransaksi(undefined);
-    toast({ title: 'Sukses', description: 'Pembayaran berhasil dicatat' });
   };
 
-  const handleAddToko = (data: Omit<Toko, 'id' | 'createdAt'>) => {
-    const newToko: Toko = {
-      ...data,
-      id: String(Date.now()),
-      createdAt: new Date(),
-    };
-    setTokoList([...tokoList, newToko]);
+  const handleAddToko = async (data: Omit<Toko, 'id' | 'createdAt'>) => {
+    if (editingToko) {
+      await updateToko(editingToko.id, data);
+    } else {
+      await addToko(data);
+    }
     setShowTokoForm(false);
     setEditingToko(undefined);
   };
@@ -134,12 +111,29 @@ export default function Index() {
     setShowTokoForm(true);
   };
 
-  const handleDeleteToko = (toko: Toko) => {
-    setTokoList(tokoList.filter(t => t.id !== toko.id));
-    toast({ title: 'Dihapus', description: 'Data toko berhasil dihapus' });
+  const handleDeleteToko = async (toko: Toko) => {
+    await deleteToko(toko.id);
   };
 
+  const loading = tokoLoading || transaksiLoading;
+
   const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="space-y-6 animate-fade-in">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={i} className="h-32 rounded-xl" />
+            ))}
+          </div>
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Skeleton className="h-64 rounded-xl" />
+            <Skeleton className="h-64 rounded-xl" />
+          </div>
+        </div>
+      );
+    }
+
     switch (activeMenu) {
       case 'dashboard':
         return (
@@ -197,17 +191,23 @@ export default function Index() {
               </Button>
             </div>
             
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {tokoList.map((toko) => (
-                <TokoCard
-                  key={toko.id}
-                  toko={toko}
-                  onEdit={handleEditToko}
-                  onDelete={handleDeleteToko}
-                  onWhatsApp={sendWhatsAppToko}
-                />
-              ))}
-            </div>
+            {tokoList.length === 0 ? (
+              <div className="card-elevated rounded-xl p-12 text-center">
+                <p className="text-muted-foreground">Belum ada data toko. Klik "Tambah Toko" untuk menambahkan.</p>
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {tokoList.map((toko) => (
+                  <TokoCard
+                    key={toko.id}
+                    toko={toko}
+                    onEdit={handleEditToko}
+                    onDelete={handleDeleteToko}
+                    onWhatsApp={sendWhatsAppToko}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         );
       
@@ -216,34 +216,22 @@ export default function Index() {
           <div className="max-w-4xl animate-fade-in">
             <TransaksiForm
               tokoList={tokoList}
-              onSubmit={(data) => {
-                const toko = tokoList.find(t => t.id === data.tokoId)!;
-                const totalHarga = data.items.reduce((sum, item) => sum + item.subtotal, 0);
-                const dpAmount = data.dpAmount || 0;
-                
-                const newTransaksi: Transaksi = {
-                  id: `TRX${Date.now().toString().slice(-6)}`,
+              onSubmit={async (data) => {
+                const toko = tokoList.find(t => t.id === data.tokoId);
+                if (!toko) return;
+                await addTransaksi({
                   tokoId: data.tokoId,
-                  toko,
-                  tanggal: new Date(),
-                  items: data.items,
-                  totalHarga,
+                  items: data.items.map(item => ({
+                    namaBarang: item.namaBarang,
+                    jumlah: item.jumlah,
+                    hargaSatuan: item.hargaSatuan,
+                    subtotal: item.subtotal,
+                  })),
                   tipePembayaran: data.tipePembayaran,
-                  jatuhTempo: data.jatuhTempo ? new Date(data.jatuhTempo) : undefined,
-                  status: data.tipePembayaran === 'cash' ? 'lunas' : 'belum_lunas',
-                  pembayaran: dpAmount > 0 ? [{
-                    id: `PAY${Date.now()}`,
-                    transaksiId: '',
-                    tanggal: new Date(),
-                    jumlah: dpAmount,
-                    metode: 'cash',
-                    catatan: 'DP awal',
-                  }] : [],
-                  sisaPiutang: data.tipePembayaran === 'cash' ? 0 : totalHarga - dpAmount,
+                  jatuhTempo: data.jatuhTempo,
+                  dpAmount: data.dpAmount,
                   catatan: data.catatan,
-                };
-                
-                setTransaksiList([newTransaksi, ...transaksiList]);
+                }, toko);
               }}
             />
           </div>
@@ -331,6 +319,9 @@ export default function Index() {
             <DialogTitle>
               {editingToko ? 'Edit Toko' : 'Tambah Toko Baru'}
             </DialogTitle>
+            <DialogDescription>
+              {editingToko ? 'Perbarui informasi toko' : 'Masukkan informasi toko baru'}
+            </DialogDescription>
           </DialogHeader>
           <TokoForm
             toko={editingToko}
@@ -348,6 +339,7 @@ export default function Index() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Catat Pembayaran</DialogTitle>
+            <DialogDescription>Masukkan jumlah pembayaran yang diterima</DialogDescription>
           </DialogHeader>
           {selectedTransaksi && (
             <BayarForm
@@ -361,6 +353,7 @@ export default function Index() {
           )}
         </DialogContent>
       </Dialog>
+
       {/* Detail Transaksi Dialog */}
       <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
         <DialogContent className="max-w-2xl">
