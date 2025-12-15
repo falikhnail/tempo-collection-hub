@@ -19,6 +19,7 @@ import { TokoForm } from '@/components/forms/TokoForm';
 import { BayarForm } from '@/components/forms/BayarForm';
 import { LaporanPage } from '@/components/laporan/LaporanPage';
 import { TransaksiDetail } from '@/components/transaksi/TransaksiDetail';
+import { DateRangeFilter } from '@/components/filters/DateRangeFilter';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -33,6 +34,7 @@ import { Toko, Transaksi, StatusFilter } from '@/types';
 import { useToko } from '@/hooks/useToko';
 import { useTransaksi } from '@/hooks/useTransaksi';
 import { Skeleton } from '@/components/ui/skeleton';
+import { startOfDay, endOfDay, isWithinInterval } from 'date-fns';
 
 const pageConfig: Record<string, { title: string; subtitle?: string }> = {
   dashboard: { title: 'Dashboard', subtitle: 'Ringkasan piutang dan transaksi' },
@@ -49,6 +51,10 @@ export default function Index() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('semua');
   const [searchQuery, setSearchQuery] = useState('');
   
+  // Date range filter state
+  const [startDate, setStartDate] = useState<Date | undefined>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
+  
   // Database hooks
   const { tokoList, loading: tokoLoading, addToko, updateToko, deleteToko } = useToko();
   const { transaksiList, loading: transaksiLoading, addTransaksi, addPembayaran } = useTransaksi();
@@ -59,6 +65,11 @@ export default function Index() {
   const [showBayarForm, setShowBayarForm] = useState(false);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [selectedTransaksi, setSelectedTransaksi] = useState<Transaksi | undefined>();
+
+  const clearDateFilter = () => {
+    setStartDate(undefined);
+    setEndDate(undefined);
+  };
 
   const handleDetail = (transaksi: Transaksi) => {
     setSelectedTransaksi(transaksi);
@@ -138,16 +149,37 @@ export default function Index() {
 
   const loading = tokoLoading || transaksiLoading;
 
-  // Filter data based on search query
-  const filteredTransaksi = transaksiList.filter(t => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      t.toko.nama.toLowerCase().includes(query) ||
-      t.id.toLowerCase().includes(query) ||
-      t.toko.alamat.toLowerCase().includes(query)
-    );
-  });
+  // Filter data based on search query and date range
+  const filteredTransaksi = useMemo(() => {
+    return transaksiList.filter(t => {
+      // Search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const matchSearch = 
+          t.toko.nama.toLowerCase().includes(query) ||
+          t.id.toLowerCase().includes(query) ||
+          t.toko.alamat.toLowerCase().includes(query);
+        if (!matchSearch) return false;
+      }
+      
+      // Date range filter
+      if (startDate || endDate) {
+        const transaksiDate = new Date(t.tanggal);
+        if (startDate && endDate) {
+          if (!isWithinInterval(transaksiDate, { 
+            start: startOfDay(startDate), 
+            end: endOfDay(endDate) 
+          })) return false;
+        } else if (startDate) {
+          if (transaksiDate < startOfDay(startDate)) return false;
+        } else if (endDate) {
+          if (transaksiDate > endOfDay(endDate)) return false;
+        }
+      }
+      
+      return true;
+    });
+  }, [transaksiList, searchQuery, startDate, endDate]);
 
   const filteredToko = tokoList.filter(t => {
     if (!searchQuery) return true;
@@ -291,17 +323,27 @@ export default function Index() {
       case 'piutang':
         return (
           <div className="space-y-6 animate-fade-in">
-            <Tabs
-              value={statusFilter}
-              onValueChange={(v) => setStatusFilter(v as StatusFilter)}
-            >
-              <TabsList>
-                <TabsTrigger value="semua">Semua</TabsTrigger>
-                <TabsTrigger value="belum_lunas">Aktif</TabsTrigger>
-                <TabsTrigger value="terlambat">Terlambat</TabsTrigger>
-                <TabsTrigger value="lunas">Lunas</TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <Tabs
+                value={statusFilter}
+                onValueChange={(v) => setStatusFilter(v as StatusFilter)}
+              >
+                <TabsList>
+                  <TabsTrigger value="semua">Semua</TabsTrigger>
+                  <TabsTrigger value="belum_lunas">Aktif</TabsTrigger>
+                  <TabsTrigger value="terlambat">Terlambat</TabsTrigger>
+                  <TabsTrigger value="lunas">Lunas</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              
+              <DateRangeFilter
+                startDate={startDate}
+                endDate={endDate}
+                onStartDateChange={setStartDate}
+                onEndDateChange={setEndDate}
+                onClear={clearDateFilter}
+              />
+            </div>
             
             <PiutangTable
               transaksi={filteredTransaksi}
@@ -316,6 +358,16 @@ export default function Index() {
       case 'riwayat':
         return (
           <div className="space-y-6 animate-fade-in">
+            <div className="flex justify-end">
+              <DateRangeFilter
+                startDate={startDate}
+                endDate={endDate}
+                onStartDateChange={setStartDate}
+                onEndDateChange={setEndDate}
+                onClear={clearDateFilter}
+              />
+            </div>
+            
             <PiutangTable
               transaksi={filteredTransaksi}
               statusFilter="semua"
