@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -23,7 +23,7 @@ interface BayarFormProps {
 export function BayarForm({ transaksi, onSubmit, onCancel }: BayarFormProps) {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
-    jumlah: '',
+    jumlah: 0,
     metode: 'transfer',
     catatan: '',
   });
@@ -31,7 +31,7 @@ export function BayarForm({ transaksi, onSubmit, onCancel }: BayarFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const jumlah = Number(formData.jumlah);
+    const jumlah = formData.jumlah;
     
     if (!jumlah || jumlah <= 0) {
       toast({
@@ -59,7 +59,7 @@ export function BayarForm({ transaksi, onSubmit, onCancel }: BayarFormProps) {
   };
 
   const bayarLunas = () => {
-    setFormData({ ...formData, jumlah: String(transaksi.sisaPiutang) });
+    setFormData({ ...formData, jumlah: transaksi.sisaPiutang });
   };
 
   return (
@@ -96,12 +96,11 @@ export function BayarForm({ transaksi, onSubmit, onCancel }: BayarFormProps) {
             Bayar Lunas
           </Button>
         </div>
-        <Input
-          type="number"
+        <CurrencyInput
           className="input-modern"
           placeholder="0"
           value={formData.jumlah}
-          onChange={(e) => setFormData({ ...formData, jumlah: e.target.value })}
+          onChange={(value) => setFormData({ ...formData, jumlah: value })}
         />
       </div>
       

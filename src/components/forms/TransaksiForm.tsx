@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -161,12 +162,11 @@ export function TransaksiForm({ tokoList, onSubmit }: TransaksiFormProps) {
               
               <div className="space-y-2">
                 <Label>DP (Opsional)</Label>
-                <Input
-                  type="number"
+                <CurrencyInput
                   className="input-modern"
                   placeholder="0"
-                  value={formData.dpAmount || ''}
-                  onChange={(e) => setFormData({ ...formData, dpAmount: Number(e.target.value) })}
+                  value={formData.dpAmount || 0}
+                  onChange={(value) => setFormData({ ...formData, dpAmount: value })}
                 />
               </div>
             </>
@@ -207,12 +207,11 @@ export function TransaksiForm({ tokoList, onSubmit }: TransaksiFormProps) {
               
               <div className="w-40 space-y-2">
                 <Label>Harga Satuan</Label>
-                <Input
-                  type="number"
+                <CurrencyInput
                   className="input-modern"
                   placeholder="0"
-                  value={item.hargaSatuan || ''}
-                  onChange={(e) => updateItem(index, 'hargaSatuan', e.target.value)}
+                  value={item.hargaSatuan || 0}
+                  onChange={(value) => updateItem(index, 'hargaSatuan', value)}
                 />
               </div>
               
