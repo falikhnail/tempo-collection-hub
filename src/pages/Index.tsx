@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { 
   Wallet, 
   TrendingUp, 
   AlertTriangle, 
   CheckCircle,
-  Plus
+  Plus,
+  Receipt
 } from 'lucide-react';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
@@ -73,6 +74,25 @@ export default function Index() {
     .filter(t => t.status === 'lunas')
     .reduce((sum, t) => sum + t.totalHarga, 0);
   const jumlahTerlambat = transaksiList.filter(t => t.status === 'terlambat').length;
+
+  // Monthly transaction stats
+  const monthlyStats = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    const thisMonthTransaksi = transaksiList.filter(t => {
+      const date = new Date(t.tanggal);
+      return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+    });
+    
+    const totalTransaksi = thisMonthTransaksi.length;
+    const tempoTransaksi = thisMonthTransaksi.filter(t => t.tipePembayaran === 'tempo').length;
+    const cashTransaksi = thisMonthTransaksi.filter(t => t.tipePembayaran === 'cash').length;
+    const totalNominal = thisMonthTransaksi.reduce((sum, t) => sum + t.totalHarga, 0);
+    
+    return { totalTransaksi, tempoTransaksi, cashTransaksi, totalNominal };
+  }, [transaksiList]);
 
   const sendWhatsApp = (transaksi: Transaksi) => {
     const message = `Halo ${transaksi.toko.nama},\n\nIni adalah pengingat untuk pembayaran piutang:\n- ID: ${transaksi.id}\n- Sisa: ${formatRupiah(transaksi.sisaPiutang)}\n- Jatuh Tempo: ${transaksi.jatuhTempo?.toLocaleDateString('id-ID')}\n\nMohon segera melakukan pembayaran. Terima kasih.`;
@@ -161,7 +181,7 @@ export default function Index() {
         return (
           <div className="space-y-6 animate-fade-in">
             {/* Stats Grid */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
               <StatCard
                 title="Total Piutang"
                 value={formatRupiah(totalPiutang)}
@@ -177,10 +197,17 @@ export default function Index() {
                 variant="danger"
               />
               <StatCard
-                title="Terbayar Bulan Ini"
-                value={formatRupiah(totalLunas)}
+                title="Transaksi Bulan Ini"
+                value={`${monthlyStats.totalTransaksi}`}
+                subtitle={`Tempo: ${monthlyStats.tempoTransaksi} | Cash: ${monthlyStats.cashTransaksi}`}
+                icon={Receipt}
+                variant="primary"
+              />
+              <StatCard
+                title="Nominal Bulan Ini"
+                value={formatRupiah(monthlyStats.totalNominal)}
+                subtitle="total transaksi masuk"
                 icon={TrendingUp}
-                trend={{ value: '12% dari bulan lalu', positive: true }}
               />
               <StatCard
                 title="Lunas"
