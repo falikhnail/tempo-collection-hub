@@ -302,7 +302,7 @@ export default function Index() {
       <Sidebar activeMenu={activeMenu} onMenuChange={setActiveMenu} />
       
       <main className="pl-64">
-        <Header title={currentPage.title} subtitle={currentPage.subtitle} />
+        <Header title={currentPage.title} subtitle={currentPage.subtitle} transaksi={transaksiList} />
         
         <div className="p-6">
           {renderContent()}
