@@ -9,9 +9,11 @@ interface HeaderProps {
   title: string;
   subtitle?: string;
   transaksi?: Transaksi[];
+  searchQuery?: string;
+  onSearchChange?: (query: string) => void;
 }
 
-export function Header({ title, subtitle, transaksi = [] }: HeaderProps) {
+export function Header({ title, subtitle, transaksi = [], searchQuery = '', onSearchChange }: HeaderProps) {
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
 
@@ -51,6 +53,8 @@ export function Header({ title, subtitle, transaksi = [] }: HeaderProps) {
           <Input
             placeholder="Cari transaksi, toko..."
             className="w-64 pl-9 input-modern"
+            value={searchQuery}
+            onChange={(e) => onSearchChange?.(e.target.value)}
           />
         </div>
         
