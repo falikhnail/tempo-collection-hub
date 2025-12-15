@@ -1,4 +1,4 @@
-import { Eye, MessageCircle, CreditCard } from 'lucide-react';
+import { Eye, MessageCircle, CreditCard, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -8,6 +8,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Transaksi, StatusFilter } from '@/types';
 import { formatRupiah, formatTanggal, hitungHariJatuhTempo } from '@/data/mockData';
 import { cn } from '@/lib/utils';
@@ -18,6 +29,7 @@ interface PiutangTableProps {
   onBayar: (transaksi: Transaksi) => void;
   onDetail: (transaksi: Transaksi) => void;
   onKirimWA: (transaksi: Transaksi) => void;
+  onDelete?: (transaksi: Transaksi) => void;
 }
 
 const statusConfig = {
@@ -32,7 +44,8 @@ export function PiutangTable({
   statusFilter, 
   onBayar, 
   onDetail, 
-  onKirimWA 
+  onKirimWA,
+  onDelete,
 }: PiutangTableProps) {
   const filtered = transaksi.filter(t => {
     if (statusFilter === 'semua') return true;
@@ -140,6 +153,36 @@ export function PiutangTable({
                             <CreditCard className="h-4 w-4" />
                           </Button>
                         </>
+                      )}
+                      {onDelete && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Hapus Transaksi?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Transaksi <strong>{t.id}</strong> dari <strong>{t.toko.nama}</strong> akan dihapus beserta semua data pembayaran terkait. Tindakan ini tidak dapat dibatalkan.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Batal</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => onDelete(t)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Hapus
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       )}
                     </div>
                   </TableCell>

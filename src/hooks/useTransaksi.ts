@@ -175,6 +175,40 @@ export function useTransaksi() {
     }
   };
 
+  const deleteTransaksi = async (transaksiId: string) => {
+    try {
+      // Delete related pembayaran first
+      const { error: pembayaranError } = await supabase
+        .from('pembayaran')
+        .delete()
+        .eq('transaksi_id', transaksiId);
+      
+      if (pembayaranError) throw pembayaranError;
+
+      // Delete related items
+      const { error: itemsError } = await supabase
+        .from('item_transaksi')
+        .delete()
+        .eq('transaksi_id', transaksiId);
+      
+      if (itemsError) throw itemsError;
+
+      // Delete transaksi
+      const { error: transaksiError } = await supabase
+        .from('transaksi')
+        .delete()
+        .eq('id', transaksiId);
+      
+      if (transaksiError) throw transaksiError;
+
+      toast({ title: 'Sukses', description: 'Transaksi berhasil dihapus' });
+      await fetchTransaksi();
+    } catch (error) {
+      console.error('Error deleting transaksi:', error);
+      toast({ title: 'Error', description: 'Gagal menghapus transaksi', variant: 'destructive' });
+    }
+  };
+
   useEffect(() => {
     fetchTransaksi();
   }, []);
@@ -184,6 +218,7 @@ export function useTransaksi() {
     loading,
     addTransaksi,
     addPembayaran,
+    deleteTransaksi,
     refetch: fetchTransaksi,
   };
 }

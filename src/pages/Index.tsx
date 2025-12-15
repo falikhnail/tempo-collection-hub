@@ -57,7 +57,7 @@ export default function Index() {
   
   // Database hooks
   const { tokoList, loading: tokoLoading, addToko, updateToko, deleteToko } = useToko();
-  const { transaksiList, loading: transaksiLoading, addTransaksi, addPembayaran } = useTransaksi();
+  const { transaksiList, loading: transaksiLoading, addTransaksi, addPembayaran, deleteTransaksi } = useTransaksi();
   
   // Dialog states
   const [showTokoForm, setShowTokoForm] = useState(false);
@@ -351,6 +351,7 @@ export default function Index() {
               onBayar={handleBayar}
               onDetail={handleDetail}
               onKirimWA={sendWhatsApp}
+              onDelete={(t) => deleteTransaksi(t.id)}
             />
           </div>
         );
@@ -374,6 +375,7 @@ export default function Index() {
               onBayar={handleBayar}
               onDetail={handleDetail}
               onKirimWA={sendWhatsApp}
+              onDelete={(t) => deleteTransaksi(t.id)}
             />
           </div>
         );
