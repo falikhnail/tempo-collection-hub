@@ -77,12 +77,12 @@ export default function Index() {
   const sendWhatsApp = (transaksi: Transaksi) => {
     const message = `Halo ${transaksi.toko.nama},\n\nIni adalah pengingat untuk pembayaran piutang:\n- ID: ${transaksi.id}\n- Sisa: ${formatRupiah(transaksi.sisaPiutang)}\n- Jatuh Tempo: ${transaksi.jatuhTempo?.toLocaleDateString('id-ID')}\n\nMohon segera melakukan pembayaran. Terima kasih.`;
     const url = `https://wa.me/${transaksi.toko.whatsapp}?text=${encodeURIComponent(message)}`;
-    window.open(url, '_blank');
+    window.location.href = url;
   };
 
   const sendWhatsAppToko = (toko: Toko) => {
     const url = `https://wa.me/${toko.whatsapp}`;
-    window.open(url, '_blank');
+    window.location.href = url;
   };
 
   const handleBayar = (transaksi: Transaksi) => {
