@@ -46,6 +46,7 @@ const pageConfig: Record<string, { title: string; subtitle?: string }> = {
 export default function Index() {
   const [activeMenu, setActiveMenu] = useState('dashboard');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('semua');
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Database hooks
   const { tokoList, loading: tokoLoading, addToko, updateToko, deleteToko } = useToko();
@@ -117,6 +118,27 @@ export default function Index() {
 
   const loading = tokoLoading || transaksiLoading;
 
+  // Filter data based on search query
+  const filteredTransaksi = transaksiList.filter(t => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      t.toko.nama.toLowerCase().includes(query) ||
+      t.id.toLowerCase().includes(query) ||
+      t.toko.alamat.toLowerCase().includes(query)
+    );
+  });
+
+  const filteredToko = tokoList.filter(t => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      t.nama.toLowerCase().includes(query) ||
+      t.alamat.toLowerCase().includes(query) ||
+      t.telepon.includes(query)
+    );
+  });
+
   const renderContent = () => {
     if (loading) {
       return (
@@ -171,11 +193,11 @@ export default function Index() {
             {/* Two column layout */}
             <div className="grid gap-6 lg:grid-cols-2">
               <JatuhTempoList
-                transaksi={transaksiList}
+                transaksi={filteredTransaksi}
                 onKirimWA={sendWhatsApp}
               />
               <RecentTransactions
-                transaksi={transaksiList}
+                transaksi={filteredTransaksi}
                 onViewAll={() => setActiveMenu('riwayat')}
               />
             </div>
@@ -191,13 +213,15 @@ export default function Index() {
               </Button>
             </div>
             
-            {tokoList.length === 0 ? (
+            {filteredToko.length === 0 ? (
               <div className="card-elevated rounded-xl p-12 text-center">
-                <p className="text-muted-foreground">Belum ada data toko. Klik "Tambah Toko" untuk menambahkan.</p>
+                <p className="text-muted-foreground">
+                  {searchQuery ? 'Tidak ada toko yang cocok dengan pencarian.' : 'Belum ada data toko. Klik "Tambah Toko" untuk menambahkan.'}
+                </p>
               </div>
             ) : (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {tokoList.map((toko) => (
+                {filteredToko.map((toko) => (
                   <TokoCard
                     key={toko.id}
                     toko={toko}
@@ -253,7 +277,7 @@ export default function Index() {
             </Tabs>
             
             <PiutangTable
-              transaksi={transaksiList}
+              transaksi={filteredTransaksi}
               statusFilter={statusFilter}
               onBayar={handleBayar}
               onDetail={handleDetail}
@@ -266,7 +290,7 @@ export default function Index() {
         return (
           <div className="space-y-6 animate-fade-in">
             <PiutangTable
-              transaksi={transaksiList}
+              transaksi={filteredTransaksi}
               statusFilter="semua"
               onBayar={handleBayar}
               onDetail={handleDetail}
@@ -302,7 +326,13 @@ export default function Index() {
       <Sidebar activeMenu={activeMenu} onMenuChange={setActiveMenu} />
       
       <main className="pl-64">
-        <Header title={currentPage.title} subtitle={currentPage.subtitle} transaksi={transaksiList} />
+        <Header 
+          title={currentPage.title} 
+          subtitle={currentPage.subtitle} 
+          transaksi={transaksiList}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+        />
         
         <div className="p-6">
           {renderContent()}
