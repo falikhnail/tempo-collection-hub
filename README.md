@@ -172,5 +172,5 @@ MIT License - Silakan gunakan untuk keperluan personal maupun komersial.
 ---
 
 <div align="center">
-  <p>Dibuat dengan ❤️ menggunakan <a href="https://lovable.dev">Lovable</a></p>
+  <p>Dibuat dengan ❤️
 </div>
