@@ -59,7 +59,7 @@ FurniTrack adalah sistem manajemen piutang yang dirancang khusus untuk toko furn
 
 ### Prasyarat
 - Node.js 18+ atau Bun
-- Akun Lovable (untuk backend)
+- Lovable (untuk backend)
 
 ### Instalasi
 
