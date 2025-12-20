@@ -21,6 +21,7 @@ import { LaporanPage } from '@/components/laporan/LaporanPage';
 import { TransaksiDetail } from '@/components/transaksi/TransaksiDetail';
 import { DateRangeFilter } from '@/components/filters/DateRangeFilter';
 import { DataManagement } from '@/components/settings/DataManagement';
+import { ReminderSchedule } from '@/components/notifications/ReminderSchedule';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -43,6 +44,7 @@ const pageConfig: Record<string, { title: string; subtitle?: string }> = {
   transaksi: { title: 'Transaksi Baru', subtitle: 'Buat transaksi penjualan' },
   piutang: { title: 'Daftar Piutang', subtitle: 'Kelola semua piutang' },
   riwayat: { title: 'Riwayat Transaksi', subtitle: 'Lihat semua transaksi' },
+  pengingat: { title: 'Jadwal Pengingat', subtitle: 'Kelola notifikasi piutang jatuh tempo' },
   laporan: { title: 'Laporan', subtitle: 'Grafik dan statistik piutang' },
   settings: { title: 'Pengaturan', subtitle: 'Konfigurasi aplikasi' },
 };
@@ -384,6 +386,16 @@ export default function Index() {
       case 'laporan':
         return (
           <LaporanPage transaksi={transaksiList} toko={tokoList} />
+        );
+      
+      case 'pengingat':
+        return (
+          <div className="max-w-4xl animate-fade-in">
+            <ReminderSchedule 
+              transaksi={transaksiList} 
+              onKirimWA={sendWhatsApp} 
+            />
+          </div>
         );
       
       case 'settings':
