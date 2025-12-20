@@ -148,9 +148,27 @@ export function useMessageTemplates() {
       jatuh_tempo: string;
     }
   ) => {
+    // Always read fresh from localStorage to ensure we get the latest template
+    let currentTemplates = templates;
+    let currentActiveId = activeTemplateId;
+    
+    try {
+      const storedTemplates = localStorage.getItem(STORAGE_KEY);
+      const storedActiveId = localStorage.getItem(ACTIVE_TEMPLATE_KEY);
+      
+      if (storedTemplates) {
+        currentTemplates = JSON.parse(storedTemplates);
+      }
+      if (storedActiveId) {
+        currentActiveId = storedActiveId;
+      }
+    } catch {
+      // Fall back to state if localStorage read fails
+    }
+    
     const template = templateId 
-      ? templates.find(t => t.id === templateId) 
-      : getActiveTemplate();
+      ? currentTemplates.find(t => t.id === templateId) 
+      : currentTemplates.find(t => t.id === currentActiveId) || currentTemplates[0];
     
     if (!template) return '';
 
