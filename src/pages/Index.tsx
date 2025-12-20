@@ -55,6 +55,7 @@ export default function Index() {
   const [activeMenu, setActiveMenu] = useState('dashboard');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('semua');
   const [searchQuery, setSearchQuery] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // Date range filter state
   const [startDate, setStartDate] = useState<Date | undefined>();
@@ -426,18 +427,24 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Sidebar activeMenu={activeMenu} onMenuChange={setActiveMenu} />
+      <Sidebar 
+        activeMenu={activeMenu} 
+        onMenuChange={setActiveMenu} 
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
       
-      <main className="pl-64">
+      <main className="lg:pl-64 min-h-screen">
         <Header 
           title={currentPage.title} 
           subtitle={currentPage.subtitle} 
           transaksi={transaksiList}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
+          onMenuToggle={() => setSidebarOpen(true)}
         />
         
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {renderContent()}
         </div>
       </main>
