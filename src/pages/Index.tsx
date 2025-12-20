@@ -21,7 +21,9 @@ import { LaporanPage } from '@/components/laporan/LaporanPage';
 import { TransaksiDetail } from '@/components/transaksi/TransaksiDetail';
 import { DateRangeFilter } from '@/components/filters/DateRangeFilter';
 import { DataManagement } from '@/components/settings/DataManagement';
+import { MessageTemplateEditor } from '@/components/settings/MessageTemplateEditor';
 import { ReminderSchedule } from '@/components/notifications/ReminderSchedule';
+import { useMessageTemplates } from '@/hooks/useMessageTemplates';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -61,6 +63,7 @@ export default function Index() {
   // Database hooks
   const { tokoList, loading: tokoLoading, addToko, updateToko, deleteToko, refetch: refetchToko } = useToko();
   const { transaksiList, loading: transaksiLoading, addTransaksi, addPembayaran, deleteTransaksi, refetch: refetchTransaksi } = useTransaksi();
+  const { formatMessage } = useMessageTemplates();
   
   // Dialog states
   const [showTokoForm, setShowTokoForm] = useState(false);
@@ -109,7 +112,12 @@ export default function Index() {
   }, [transaksiList]);
 
   const sendWhatsApp = (transaksi: Transaksi) => {
-    const message = `Halo ${transaksi.toko.nama},\n\nIni adalah pengingat untuk pembayaran piutang:\n- ID: ${transaksi.id}\n- Sisa: ${formatRupiah(transaksi.sisaPiutang)}\n- Jatuh Tempo: ${transaksi.jatuhTempo?.toLocaleDateString('id-ID')}\n\nMohon segera melakukan pembayaran. Terima kasih.`;
+    const message = formatMessage(undefined, {
+      nama_toko: transaksi.toko.nama,
+      id_transaksi: transaksi.id,
+      sisa_piutang: formatRupiah(transaksi.sisaPiutang),
+      jatuh_tempo: transaksi.jatuhTempo?.toLocaleDateString('id-ID') || '-',
+    });
     const url = `https://wa.me/${transaksi.toko.whatsapp}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
   };
@@ -401,6 +409,7 @@ export default function Index() {
       case 'settings':
         return (
           <div className="max-w-3xl animate-fade-in space-y-6">
+            <MessageTemplateEditor />
             <DataManagement 
               refetchToko={refetchToko} 
               refetchTransaksi={refetchTransaksi} 
