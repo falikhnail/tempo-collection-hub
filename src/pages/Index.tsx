@@ -20,6 +20,7 @@ import { BayarForm } from '@/components/forms/BayarForm';
 import { LaporanPage } from '@/components/laporan/LaporanPage';
 import { TransaksiDetail } from '@/components/transaksi/TransaksiDetail';
 import { DateRangeFilter } from '@/components/filters/DateRangeFilter';
+import { DataManagement } from '@/components/settings/DataManagement';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -56,8 +57,8 @@ export default function Index() {
   const [endDate, setEndDate] = useState<Date | undefined>();
   
   // Database hooks
-  const { tokoList, loading: tokoLoading, addToko, updateToko, deleteToko } = useToko();
-  const { transaksiList, loading: transaksiLoading, addTransaksi, addPembayaran, deleteTransaksi } = useTransaksi();
+  const { tokoList, loading: tokoLoading, addToko, updateToko, deleteToko, refetch: refetchToko } = useToko();
+  const { transaksiList, loading: transaksiLoading, addTransaksi, addPembayaran, deleteTransaksi, refetch: refetchTransaksi } = useTransaksi();
   
   // Dialog states
   const [showTokoForm, setShowTokoForm] = useState(false);
@@ -387,11 +388,11 @@ export default function Index() {
       
       case 'settings':
         return (
-          <div className="card-elevated rounded-xl p-6 max-w-2xl animate-fade-in">
-            <h3 className="text-lg font-semibold mb-4">Pengaturan Aplikasi</h3>
-            <p className="text-muted-foreground">
-              Fitur pengaturan akan segera tersedia. Anda dapat mengkonfigurasi notifikasi WhatsApp, format pesan, dan preferensi lainnya di sini.
-            </p>
+          <div className="max-w-3xl animate-fade-in space-y-6">
+            <DataManagement 
+              refetchToko={refetchToko} 
+              refetchTransaksi={refetchTransaksi} 
+            />
           </div>
         );
       
