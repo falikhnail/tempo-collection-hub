@@ -18,6 +18,7 @@ import { TransaksiForm } from '@/components/forms/TransaksiForm';
 import { TokoForm } from '@/components/forms/TokoForm';
 import { BayarForm } from '@/components/forms/BayarForm';
 import { LaporanPage } from '@/components/laporan/LaporanPage';
+import { RiwayatPage } from '@/components/riwayat/RiwayatPage';
 import { TransaksiDetail } from '@/components/transaksi/TransaksiDetail';
 import { DateRangeFilter } from '@/components/filters/DateRangeFilter';
 import { DataManagement } from '@/components/settings/DataManagement';
@@ -45,7 +46,7 @@ const pageConfig: Record<string, { title: string; subtitle?: string }> = {
   toko: { title: 'Data Toko', subtitle: 'Kelola data pelanggan toko' },
   transaksi: { title: 'Transaksi Baru', subtitle: 'Buat transaksi penjualan' },
   piutang: { title: 'Daftar Piutang', subtitle: 'Kelola semua piutang' },
-  riwayat: { title: 'Riwayat Transaksi', subtitle: 'Lihat semua transaksi' },
+  riwayat: { title: 'Riwayat', subtitle: 'Transaksi lunas & riwayat pembayaran' },
   pengingat: { title: 'Jadwal Pengingat', subtitle: 'Kelola notifikasi piutang jatuh tempo' },
   laporan: { title: 'Laporan', subtitle: 'Grafik dan statistik piutang' },
   settings: { title: 'Pengaturan', subtitle: 'Konfigurasi aplikasi' },
@@ -370,26 +371,10 @@ export default function Index() {
       
       case 'riwayat':
         return (
-          <div className="space-y-6 animate-fade-in">
-            <div className="flex justify-end">
-              <DateRangeFilter
-                startDate={startDate}
-                endDate={endDate}
-                onStartDateChange={setStartDate}
-                onEndDateChange={setEndDate}
-                onClear={clearDateFilter}
-              />
-            </div>
-            
-            <PiutangTable
-              transaksi={filteredTransaksi}
-              statusFilter="semua"
-              onBayar={handleBayar}
-              onDetail={handleDetail}
-              onKirimWA={sendWhatsApp}
-              onDelete={(t) => deleteTransaksi(t.id)}
-            />
-          </div>
+          <RiwayatPage
+            transaksi={transaksiList}
+            onDetail={handleDetail}
+          />
         );
       
       case 'laporan':
