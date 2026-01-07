@@ -18,6 +18,12 @@ Ini adalah pengingat untuk pembayaran piutang:
 - Sisa Piutang: {sisa_piutang}
 - Jatuh Tempo: {jatuh_tempo}
 
+Pembayaran dapat dikirimkan ke salah satu rekening berikut:
+🏦 BRI: 592501013144533
+🏦 BCA: 0982222221
+🏦 BNI: 5557773731
+a.n. ANDRI EKA SETIAWAN
+
 Mohon segera melakukan pembayaran. Terima kasih.
 
 Salam,
@@ -35,6 +41,12 @@ Semoga usahanya lancar ya! Kami ingin mengingatkan bahwa ada tagihan yang perlu 
 💰 Nominal: {sisa_piutang}
 📅 Jatuh Tempo: {jatuh_tempo}
 
+💳 Silakan transfer ke:
+• BRI: 592501013144533
+• BCA: 0982222221
+• BNI: 5557773731
+a.n. ANDRI EKA SETIAWAN
+
 Jika sudah dibayar, mohon abaikan pesan ini. Terima kasih atas kerjasamanya! 🙏`,
     isDefault: false,
   },
@@ -50,6 +62,12 @@ Bersama ini kami sampaikan pengingat pembayaran piutang dengan rincian sebagai b
 Nomor Transaksi: {id_transaksi}
 Jumlah Terutang: {sisa_piutang}
 Tanggal Jatuh Tempo: {jatuh_tempo}
+
+Pembayaran dapat dilakukan melalui transfer ke rekening berikut:
+- BRI: 592501013144533
+- BCA: 0982222221
+- BNI: 5557773731
+Atas nama: ANDRI EKA SETIAWAN
 
 Kami mohon pembayaran dapat segera dilakukan sebelum tanggal jatuh tempo.
 
