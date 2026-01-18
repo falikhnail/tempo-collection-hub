@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
@@ -24,6 +24,7 @@ interface BayarFormProps {
 export function BayarForm({ transaksi, onSubmit, onCancel }: BayarFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const [formData, setFormData] = useState({
     jumlah: 0,
     metode: 'transfer',
@@ -64,6 +65,11 @@ export function BayarForm({ transaksi, onSubmit, onCancel }: BayarFormProps) {
         metode: formData.metode,
         catatan: formData.catatan,
       });
+      setIsSuccess(true);
+      // Auto close after success animation
+      setTimeout(() => {
+        onCancel();
+      }, 1500);
     } catch (error) {
       setIsSubmitting(false);
     }
@@ -72,6 +78,26 @@ export function BayarForm({ transaksi, onSubmit, onCancel }: BayarFormProps) {
   const bayarLunas = () => {
     setFormData({ ...formData, jumlah: transaksi.sisaPiutang });
   };
+
+  // Success state view
+  if (isSuccess) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 space-y-4 animate-fade-in">
+        <div className="relative">
+          <div className="absolute inset-0 bg-green-500/20 rounded-full animate-ping" />
+          <div className="relative bg-green-500 rounded-full p-4">
+            <CheckCircle2 className="h-12 w-12 text-white animate-scale-in" />
+          </div>
+        </div>
+        <div className="text-center space-y-2">
+          <h3 className="text-xl font-semibold text-green-600">Pembayaran Berhasil!</h3>
+          <p className="text-muted-foreground">
+            {formatRupiah(formData.jumlah)} telah dicatat
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -143,7 +169,7 @@ export function BayarForm({ transaksi, onSubmit, onCancel }: BayarFormProps) {
       </div>
       
       <div className="flex gap-3 justify-end pt-4">
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
           Batal
         </Button>
         <Button type="submit" className="btn-primary-gradient" disabled={isSubmitting}>
