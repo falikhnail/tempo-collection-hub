@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
@@ -146,7 +147,14 @@ export function BayarForm({ transaksi, onSubmit, onCancel }: BayarFormProps) {
           Batal
         </Button>
         <Button type="submit" className="btn-primary-gradient" disabled={isSubmitting}>
-          {isSubmitting ? 'Memproses...' : 'Konfirmasi Pembayaran'}
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Memproses...
+            </>
+          ) : (
+            'Konfirmasi Pembayaran'
+          )}
         </Button>
       </div>
     </form>
