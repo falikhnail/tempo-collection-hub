@@ -22,14 +22,18 @@ interface BayarFormProps {
 
 export function BayarForm({ transaksi, onSubmit, onCancel }: BayarFormProps) {
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     jumlah: 0,
     metode: 'transfer',
     catatan: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Prevent double submission
+    if (isSubmitting) return;
     
     const jumlah = formData.jumlah;
     
@@ -51,11 +55,17 @@ export function BayarForm({ transaksi, onSubmit, onCancel }: BayarFormProps) {
       return;
     }
     
-    onSubmit({
-      jumlah,
-      metode: formData.metode,
-      catatan: formData.catatan,
-    });
+    setIsSubmitting(true);
+    
+    try {
+      await onSubmit({
+        jumlah,
+        metode: formData.metode,
+        catatan: formData.catatan,
+      });
+    } catch (error) {
+      setIsSubmitting(false);
+    }
   };
 
   const bayarLunas = () => {
@@ -135,8 +145,8 @@ export function BayarForm({ transaksi, onSubmit, onCancel }: BayarFormProps) {
         <Button type="button" variant="outline" onClick={onCancel}>
           Batal
         </Button>
-        <Button type="submit" className="btn-primary-gradient">
-          Konfirmasi Pembayaran
+        <Button type="submit" className="btn-primary-gradient" disabled={isSubmitting}>
+          {isSubmitting ? 'Memproses...' : 'Konfirmasi Pembayaran'}
         </Button>
       </div>
     </form>
